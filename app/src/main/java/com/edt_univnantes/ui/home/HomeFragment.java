@@ -1,5 +1,6 @@
 package com.edt_univnantes.ui.home;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,8 +9,11 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.ContentFrameLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -20,6 +24,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.edt_univnantes.Classe;
+import com.edt_univnantes.Parameters;
 import com.edt_univnantes.databinding.FragmentHomeBinding;
 
 import java.util.ArrayList;
@@ -36,11 +41,15 @@ public class HomeFragment extends Fragment {
     private TextView txt_date;
 
     public RequestQueue queue;
+    private StringRequest request;
+
     private ArrayAdapter<Classe> adapter;
     private ArrayList<Classe> EdT;
     private int year, month, day;
 
-    private String url = "https://edt.univ-nantes.fr/iut_nantes/p1002715.ics";
+    Parameters parameters = new Parameters();
+
+    private String url = "";//https://edt.univ-nantes.fr/iut_nantes/p1002715.ics";
 
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         HomeViewModel homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
@@ -68,79 +77,16 @@ public class HomeFragment extends Fragment {
 
         txt_date.setText(new String("" + year + "/" + month + "/" + day) );
 
-        queue = Volley.newRequestQueue(container.getContext());
+        queue   = Volley.newRequestQueue(container.getContext());
 
-        EdT = new ArrayList<Classe>();
-        ArrayAdapter<Classe> adapter = new ArrayAdapter<Classe>(container.getContext(), android.R.layout.simple_list_item_1, new ArrayList<Classe>());
+        EdT     = new ArrayList<Classe>();
+        adapter = new ArrayAdapter<Classe>(container.getContext(), android.R.layout.simple_list_item_1, new ArrayList<Classe>());
         classesList.setAdapter(adapter);
 
-        queue.add(new StringRequest(
-                Request.Method.GET,
-                url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        boolean isOK = false;
-                        String DTSTART = "";
-                        String DTEND = "";
-                        String UID = "";
-                        String SUMMARY = "";
-                        String LOCATION = "";
-                        String DESCRIPTION = "";
-                        String CATEGORIES = "";
-
-                        adapter.clear();
-                        EdT.clear();
-
-                        Scanner scanner = new Scanner(response);
-                        while (scanner.hasNextLine()) {
-                            String line = scanner.nextLine();
-
-                            if (line.startsWith("BEGIN:")) {
-                                if (line.contains("VEVENT"))
-                                    isOK = true;
-                                else
-                                    isOK = false;
-                            } else if (line.startsWith("DTSTART:")) {
-                                DTSTART = line.replace("DTSTART:", "");
-                            } else if (line.startsWith("DTEND:")) {
-                                DTEND = line.replace("DTEND:", "");
-                            } else if (line.startsWith("UID:")) {
-                                UID = line.replace("UID:", "");
-                            } else if (line.startsWith("SUMMARY:")) {
-                                SUMMARY = line.replace("SUMMARY:", "");
-                            } else if (line.startsWith("LOCATION:")) {
-                                LOCATION = line.replace("LOCATION:", "");
-                            } else if (line.startsWith("DESCRIPTION:")) {
-                                DESCRIPTION = line.replace("DESCRIPTION:", "");
-                            } else if (line.startsWith("CATEGORIES:")) {
-                                CATEGORIES = line.replace("CATEGORIES:", "");
-                            } else if (line.startsWith("END:")) {
-                                if (line.contains("VEVENT") && isOK) {
-                                    EdT.add(new Classe(DTSTART.toString(), DTEND.toString(), UID.toString(), SUMMARY.toString(), LOCATION.toString(), DESCRIPTION.toString(), CATEGORIES.toString()));
-
-                                    Classe lastItem = EdT.get(EdT.size() - 1);
-
-                                    if ((lastItem.year_start == year) && (lastItem.month_start == month) && (lastItem.day_start == day)) {
-                                        adapter.add(lastItem);
-                                    }
-
-                                } else
-                                    isOK = false;
-
-                            }
-                        }
-                        scanner.close();
-                        txt_date.setText(new String("" + year + "/" + month + "/" + day) );
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        System.out.println(error.getMessage());
-                    }
-                }
-        ));
+        parameters.load(getContext());
+        url     = parameters.urlICS;
+        request = newRequest(url);
+        queue.add(request);
 
         bp_nextDay.setOnClickListener(new View.OnClickListener()     {
             @Override
@@ -265,9 +211,93 @@ public class HomeFragment extends Fragment {
         return root;
     }
 
-@Override
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        parameters.load(getContext());
+
+        if (!url.equals(parameters.urlICS)) {
+            url = parameters.urlICS;
+            request = newRequest(url);
+            queue.add(request);
+        }
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+
+
+    private StringRequest newRequest(String reURL) {
+        return new StringRequest(
+                Request.Method.GET,
+                reURL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        boolean isOK = false;
+                        String DTSTART = "";
+                        String DTEND = "";
+                        String UID = "";
+                        String SUMMARY = "";
+                        String LOCATION = "";
+                        String DESCRIPTION = "";
+                        String CATEGORIES = "";
+
+                        adapter.clear();
+                        EdT.clear();
+
+                        Scanner scanner = new Scanner(response);
+                        while (scanner.hasNextLine()) {
+                            String line = scanner.nextLine();
+
+                            if (line.startsWith("BEGIN:")) {
+                                if (line.contains("VEVENT"))
+                                    isOK = true;
+                                else
+                                    isOK = false;
+                            } else if (line.startsWith("DTSTART:")) {
+                                DTSTART = line.replace("DTSTART:", "");
+                            } else if (line.startsWith("DTEND:")) {
+                                DTEND = line.replace("DTEND:", "");
+                            } else if (line.startsWith("UID:")) {
+                                UID = line.replace("UID:", "");
+                            } else if (line.startsWith("SUMMARY:")) {
+                                SUMMARY = line.replace("SUMMARY:", "");
+                            } else if (line.startsWith("LOCATION:")) {
+                                LOCATION = line.replace("LOCATION:", "");
+                            } else if (line.startsWith("DESCRIPTION:")) {
+                                DESCRIPTION = line.replace("DESCRIPTION:", "");
+                            } else if (line.startsWith("CATEGORIES:")) {
+                                CATEGORIES = line.replace("CATEGORIES:", "");
+                            } else if (line.startsWith("END:")) {
+                                if (line.contains("VEVENT") && isOK) {
+                                    EdT.add(new Classe(DTSTART.toString(), DTEND.toString(), UID.toString(), SUMMARY.toString(), LOCATION.toString(), DESCRIPTION.toString(), CATEGORIES.toString()));
+
+                                    Classe lastItem = EdT.get(EdT.size() - 1);
+
+                                    if ((lastItem.year_start == year) && (lastItem.month_start == month) && (lastItem.day_start == day)) {
+                                        adapter.add(lastItem);
+                                    }
+
+                                } else
+                                    isOK = false;
+
+                            }
+                        }
+                        scanner.close();
+                        txt_date.setText(new String("" + year + "/" + month + "/" + day) );
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        System.out.println(error.getMessage());
+                    }
+                }
+        );
     }
 }
