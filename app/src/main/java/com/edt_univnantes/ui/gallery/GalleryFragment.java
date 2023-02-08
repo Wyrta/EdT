@@ -132,7 +132,7 @@ public class GalleryFragment extends Fragment {
 
         }
         catch (IOException e) {
-            System.out.println("Exception File write failed: " + e.toString());
+            System.out.println("Exception File write failed : " + e.toString());
         }
     }
 
@@ -192,7 +192,7 @@ public class GalleryFragment extends Fragment {
                             writeToFile(Agenda.toData(requestagenda.year, requestagenda.month, requestagenda.day, requestagenda.description), getContext());
                             reloadAgendaList();
                         } catch (Exception e) {
-                            Toast.makeText(getContext(), "Erreur formulaire" + e.toString(), Toast.LENGTH_LONG).show();
+                            Toast.makeText(getContext(), "Erreur agenda" + e.toString(), Toast.LENGTH_LONG).show();
 
                         }
 
