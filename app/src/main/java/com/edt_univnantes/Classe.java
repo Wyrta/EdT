@@ -18,8 +18,8 @@ public class Classe implements Parcelable {
     public String DESCRIPTION;
     public String CATEGORIES;
 
-    int year_start, month_start, day_start, hour_start, minute_start;
-    int year_stop, month_stop, day_stop, hour_stop, minute_stop;
+    public int year_start, month_start, day_start, hour_start, minute_start;
+    public int year_stop, month_stop, day_stop, hour_stop, minute_stop;
 
     public Classe(String DTSTART, String DTEND, String UID, String SUMMARY, String LOCATION, String DESCRIPTION, String CATEGORIES) {
         super();
