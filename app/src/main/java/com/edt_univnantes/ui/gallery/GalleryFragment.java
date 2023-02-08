@@ -60,8 +60,6 @@ public class GalleryFragment extends Fragment {
         bpAjouter   = binding.bpAjouter;
         classesList = binding.agendaList;
 
-        System.out.println("onCreateView");
-
         agenda = new ArrayList<Agenda>();
         adapter = new ArrayAdapter<Agenda>(container.getContext(), android.R.layout.simple_list_item_1, new ArrayList<Agenda>());
         classesList.setAdapter(adapter);
@@ -71,27 +69,6 @@ public class GalleryFragment extends Fragment {
         bpAjouter.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-/*
-                int year, month, day;
-
-                long millis=System.currentTimeMillis();
-                java.sql.Date date = new java.sql.Date(millis);
-                String str = date.toString();
-
-                String yearStr = "" + str.charAt(0) + str.charAt(1) + str.charAt(2) + str.charAt(3);
-                year = Integer.parseInt(yearStr);
-
-                String monthStr = "" + str.charAt(5) + str.charAt(6);
-                month = Integer.parseInt(monthStr);
-
-                String dayStr = "" + str.charAt(8) + str.charAt(9);
-                day = Integer.parseInt(dayStr);
-
-                adapter.insert(new Agenda(year, month, day, "coder edt du t" + cpt), 0);
-                writeToFile(Agenda.toData(year, month, day, "coder edt du t" + cpt), container.getContext());
-
-                cpt++;
-*/
 
                 Intent request = new Intent(container.getContext(), addAgenda.class);
                 someActivityResultLauncher.launch(request);
@@ -101,8 +78,8 @@ public class GalleryFragment extends Fragment {
         classesList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                adapter.clear();
-                writeToFileReset(container.getContext());
+                adapter.remove(adapter.getItem(i) );
+                saveAgenda(container.getContext());
             }
         });
 
@@ -127,33 +104,12 @@ public class GalleryFragment extends Fragment {
         scanner.close();
     }
 
-    ActivityResultLauncher<Intent> someActivityResultLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        // There are no request codes
-                        String date = result.getData().getStringExtra("KEY_DATE");
-                        String desc = result.getData().getStringExtra("KEY_DESC");
-
-                        System.out.println("onActivityResult");
-
-                        Agenda requestagenda = null;
-                        requestagenda = Agenda.parseStr(date + "/" + desc + "/", "/");
-
-                        try {
-                            writeToFile(Agenda.toData(requestagenda.year, requestagenda.month, requestagenda.day, requestagenda.description), getContext());
-                            reloadAgendaList();
-                        } catch (Exception e) {
-                            Toast.makeText(getContext(), "Erreur formulaire" + e.toString(), Toast.LENGTH_LONG).show();
-
-                        }
-
-                    }
-                }
-            });
+    private void saveAgenda(Context context) {
+        writeToFileReset(context);
+        for (int i = adapter.getCount()-1; i >= 0; i--) {
+            writeToFile(Agenda.toData(adapter.getItem(i).year, adapter.getItem(i).month, adapter.getItem(i).day, adapter.getItem(i).description), context);
+        }
+    }
 
     private void writeToFile(String data, Context context) {
         try {
@@ -176,7 +132,7 @@ public class GalleryFragment extends Fragment {
 
         }
         catch (IOException e) {
-            System.out.println("Exception File write failed: " + e.toString());
+            System.out.println("Exception File write failed : " + e.toString());
         }
     }
 
@@ -215,4 +171,32 @@ public class GalleryFragment extends Fragment {
         super.onDestroyView();
         binding = null;
     }
+
+
+    ActivityResultLauncher<Intent> someActivityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        String date = result.getData().getStringExtra("KEY_DATE");
+                        String desc = result.getData().getStringExtra("KEY_DESC");
+
+                        System.out.println("onActivityResult");
+
+                        Agenda requestagenda = null;
+                        requestagenda = Agenda.parseStr(date + "/" + desc + "/", "/");
+
+                        try {
+                            writeToFile(Agenda.toData(requestagenda.year, requestagenda.month, requestagenda.day, requestagenda.description), getContext());
+                            reloadAgendaList();
+                        } catch (Exception e) {
+                            Toast.makeText(getContext(), "Erreur agenda" + e.toString(), Toast.LENGTH_LONG).show();
+
+                        }
+
+                    }
+                }
+            });
 }
